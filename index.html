@@ -1,1 +1,138 @@
-https://gist.githubusercontent.com/reillybrenton-glitch/ad047df4585ddf535f5b600511abdcfd/raw/7efc9cf4e426b99e419103a775761d9c816729ea/index.html
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Meta Grounding World — WebXR Template</title>
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <style>
+    :root { --bg: rgba(20,24,31,.76); --fg: #e8f0ff; --muted: #a9b5c9; --accent: #8dd3ff; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font: 15px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; color: var(--fg); }
+    #hud { position: fixed; left: 16px; top: 16px; z-index: 9; padding: 14px 16px; backdrop-filter: blur(8px); background: var(--bg); border: 1px solid rgba(255,255,255,.12); border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.25); min-width: 290px; max-width: 420px; }
+    #hud h1 { margin: 0 0 6px; font-size: 16px; letter-spacing: .4px; color: var(--fg); }
+    #hud p { margin: 0 0 12px; color: var(--muted); }
+    #hud .row { display: grid; grid-template-columns: 1fr; gap: 8px; margin-bottom: 10px; }
+    #hud label { font-size: 12px; color: var(--muted); }
+    #hud select, #hud input, #hud button, #hud textarea { width: 100%; border: 1px solid rgba(255,255,255,.15); background: rgba(255,255,255,.06); color: var(--fg); padding: 10px 12px; border-radius: 10px; outline: none; transition: border .15s ease; }
+    #hud select:hover, #hud button:hover, #hud input:hover, #hud textarea:hover { border-color: rgba(255,255,255,.25); }
+    #hud button { cursor: pointer; font-weight: 600; }
+    #hud small.kbd { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12); padding: 2px 6px; border-radius: 6px; color: #cfe9ff; }
+    #toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: 18px; background: var(--bg); border: 1px solid rgba(255,255,255,.12); border-radius: 12px; padding: 10px 14px; color: var(--fg); box-shadow: 0 8px 24px rgba(0,0,0,.25); opacity: 0; transition: opacity .3s ease; z-index: 9; }
+    #hud .note { font-size: 12px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div id="hud">
+    <h1>🪷 Meta Grounding World</h1>
+    <p>Choose your vibe. Hide UI with <small class="kbd">H</small>. Enter/Exit VR with the headset button.</p>
+    <div class="row">
+      <label for="env">Environment</label>
+      <select id="env">
+        <option value="forest" selected>Forest Grove 🌲</option>
+        <option value="beach">Beach Shore 🏖</option>
+        <option value="mountain">Mountain Temple ⛰</option>
+        <option value="cosmic">Cosmic Sky ✨</option>
+      </select>
+    </div>
+    <div class="row">
+      <label for="music">Music</label>
+      <select id="music">
+        <option value="none" selected>Silence 🕊</option>
+        <option value="flute">Flute & Nature 🎼</option>
+        <option value="drone">Deep Drone 🌀</option>
+        <option value="water">Water & Chimes 💧🔔</option>
+      </select>
+      <p class="note">Add your own tracks: replace audio files in &lt;a-assets&gt; with local MP3/OGG.</p>
+    </div>
+    <div class="row">
+      <label for="tod">Time of Day</label>
+      <select id="tod">
+        <option value="dawn">Dawn 🌄</option>
+        <option value="noon" selected>Noon ☀️</option>
+        <option value="sunset">Sunset 🌇</option>
+        <option value="midnight">Midnight 🌌</option>
+      </select>
+    </div>
+    <div class="row">
+      <label for="guideToggle">Guide</label>
+      <select id="guideToggle">
+        <option value="on" selected>On — Presence & Tips</option>
+        <option value="off">Off</option>
+      </select>
+    </div>
+    <div class="row">
+      <label for="lanternText">Journal to Release</label>
+      <textarea id="lanternText" rows="2" placeholder="Type a thought to release..."></textarea>
+      <button id="releaseBtn">Release Lantern</button>
+    </div>
+  </div>
+  <div id="toast"></div>
+
+  <a-scene renderer="colorManagement: true; physicallyCorrectLights: true;" background="color: #88c9ff" vr-mode-ui="enabled: true">
+    <a-entity id="rig" position="0 1.6 5">
+      <a-entity id="camera" camera look-controls wasd-controls position="0 0 0"></a-entity>
+      <a-entity cursor="rayOrigin: mouse" raycaster="objects: .clickable"></a-entity>
+    </a-entity>
+
+    <!-- Guide NPC -->
+    <a-entity id="guide" class="clickable" position="-1 0 -0.5" gentle-guide="enabled: true; follow: true; speak: true">
+      <a-cylinder radius="0.18" height="0.9" color="#7ac7ff" position="0 0.55 0"></a-cylinder>
+      <a-sphere radius="0.18" color="#cfe9ff" position="0 1.1 0"></a-sphere>
+      <a-circle radius="0.03" color="#2b3b4a" position="-0.05 1.13 0.16"></a-circle>
+      <a-circle radius="0.03" color="#2b3b4a" position="0.05 1.13 0.16"></a-circle>
+      <a-entity id="guide-bubble" position="0 1.45 0" visible="false">
+        <a-plane width="1.6" height="0.6" color="#0a1222" material="opacity:0.9; transparent:true"></a-plane>
+        <a-text id="guide-text" value="Welcome 🪷 Tap me for help." align="center" width="1.4" position="0 0 0.01" color="#cfe9ff"></a-text>
+      </a-entity>
+    </a-entity>
+
+    <!-- Assets -->
+    <a-assets timeout="20000">
+      <audio id="audioFlute" src="" preload="auto"></audio>
+      <audio id="audioDrone" src="" preload="auto"></audio>
+      <audio id="audioWater" src="" preload="auto"></audio>
+      <audio id="audioHeart" src="" preload="auto"></audio>
+    </a-assets>
+
+    <a-sky id="sky" color="#88c9ff"></a-sky>
+    <a-entity id="ambientLight" light="type: ambient; color: #ffffff; intensity: 0.60"></a-entity>
+    <a-entity id="sunLight" position="-5 7 -2" light="type: directional; castShadow: true; color: #ffffff; intensity: 1.10"></a-entity>
+
+    <a-entity id="music-flute" sound="src: #audioFlute; autoplay: false; loop: true; volume: 0.35"></a-entity>
+    <a-entity id="music-drone" sound="src: #audioDrone; autoplay: false; loop: true; volume: 0.35"></a-entity>
+    <a-entity id="music-water" sound="src: #audioWater; autoplay: false; loop: true; volume: 0.35"></a-entity>
+    <a-entity id="music-heart" sound="src: #audioHeart; autoplay: false; loop: true; volume: 0.5"></a-entity>
+
+    <!-- Hub with Heart Song Crystal -->
+    <a-entity id="hub">
+      <a-sphere id="heartCrystal" class="clickable" radius="0.25" color="#ff9cf9" position="1 0.5 -1.5" material="emissive:#ff9cf9; emissiveIntensity:0.6; opacity:0.9; transparent:true">
+        <a-animation attribute="scale" dir="alternate" dur="2000" from="1 1 1" to="1.2 1.2 1.2" repeat="indefinite"></a-animation>
+      </a-sphere>
+      <a-text value="Heart Song" align="center" color="#6b2f6b" position="1 1 -1.5" width="2"></a-text>
+    </a-entity>
+
+    <a-entity id="env-forest" visible="true"></a-entity>
+    <a-entity id="env-beach" visible="false"></a-entity>
+    <a-entity id="env-mountain" visible="false"></a-entity>
+    <a-entity id="env-cosmic" visible="false">
+      <a-entity id="stars"></a-entity>
+    </a-entity>
+    <a-entity id="lanternLayer"></a-entity>
+  </a-scene>
+
+  <script>
+    const $ = s => document.querySelector(s);
+    const toast = msg => { const t=$('#toast'); t.textContent=msg; t.style.opacity=1; clearTimeout(t._h); t._h=setTimeout(()=>t.style.opacity=0,1800); };
+
+    AFRAME.registerComponent('gentle-guide',{schema:{enabled:{type:'boolean',default:true},follow:{type:'boolean',default:true},speak:{type:'boolean',default:true}},init(){this._lines=['Welcome 🪷 I can help you settle in.','Try the dropdowns on the left.','Tap the glowing orb to sync your breathing.','Release a lantern to let go.','Dawn & Sunset feel soothing.'];this._idx=0;this._bubble=$('#guide-bubble');this._text=$('#guide-text');this._camera=$('#camera');this.el.addEventListener('click',()=>this.say());setTimeout(()=>this.say('Welcome 🪷 Tap me for help.'),1200);},tick(){},say(text){const phrase=text||this._lines[(this._idx++)%this._lines.length];this._text.setAttribute('value',phrase);this._bubble.setAttribute('visible',true);clearTimeout(this._hideH);this._hideH=setTimeout(()=>this._bubble.setAttribute('visible',false),5000);try{const u=new SpeechSynthesisUtterance(phrase);u.rate=.95;u.pitch=1;u.volume=.6;window.speechSynthesis.cancel();window.speechSynthesis.speak(u);}catch(e){};}});
+
+    const heartCrystal=$('#heartCrystal');
+    heartCrystal.addEventListener('click',()=>{
+      const heart=$('#music-heart');
+      if(heart.components.sound.isPlaying){heart.components.sound.stopSound();toast('Heart Song stopped');}
+      else{heart.components.sound.playSound();toast('Heart Song playing');}
+    });
+  </script>
+</body>
+</html>
